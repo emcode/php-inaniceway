@@ -1,0 +1,12 @@
+{
+  "require": {
+    "robmorgan/phinx": "*",
+    "fzaninotto/faker": "~1.4",
+    "symfony/debug": "~2.6"
+  },
+  "autoload": {
+    "psr-0": {
+      "NiceApp": "./src"
+    }
+  }
+}
