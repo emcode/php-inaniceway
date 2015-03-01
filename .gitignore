@@ -3,3 +3,6 @@
 .idea
 .nbproject
 /vendor
+/config
+!/config/env-phing.properties.dist
+!/config/env-phinx.yml.dist

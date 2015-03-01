@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Tasks for creating, dropping and migrating databases">
+
+    <target name="db:rebuild" description="Drops, creates and migrates configured database" depends="env:int:initEnv,db:int:validatePhinxState,db:drop,db:create,db:migrate"/>
+
+    <target name="db:create" description="Creates configured database" depends="env:int:initEnv">
+        <echo>${db.driver}</echo>
+        <pdo url="${db.driver}:host=${db.host};"
+             userId="${db.user}" password="${db.pass}"
+             onerror="abort">
+            CREATE DATABASE `${db.name}` CHARACTER SET utf8 COLLATE utf8_general_ci;
+        </pdo>
+    </target>
+
+    <target name="db:drop" description="Destroys configured database (be careful with this)" depends="env:int:initEnv">
+        <pdo url="${db.driver}:host=${db.host};"
+             userId="${db.user}" password="${db.pass}"
+             onerror="abort">
+            DROP DATABASE IF EXISTS `${db.name}`;
+        </pdo>
+    </target>
+
+    <target name="db:migrate" description="Executes phinx migrations on DB" depends="env:int:initEnv, db:int:validatePhinxState">
+        <exec command="${phinx.bin} migrate --configuration ${phinxConfig} --environment database"
+              checkreturn="true"
+              passthru="true"
+        />
+    </target>
+
+    <target name="db:int:determinePhinxExecPath" description="Finds path to phinx executable on different OSes" hidden="true" logskipped="true">
+        <if>
+            <not>
+                <isset property="phinx.bin"/>
+            </not>
+            <then>
+                <if>
+                    <os family="windows"/>
+                    <then>
+                        <property name="phinx.bin" value="${project.basedir}\vendor\bin\phinx.bat"/>
+                    </then>
+                    <elseif>
+                        <os family="unix"/>
+                        <then>
+                            <property name="phinx.bin" value="vendor/bin/phinx" />
+                        </then>
+                    </elseif>
+                    <else>
+                        <echo message="This build is being run probably on Mac OS. Mac OS is not supported currently." />
+                    </else>
+                </if>
+            </then>
+        </if>
+    </target>
+
+    <target name="db:int:validatePhinxState" depends="env:int:initEnv,db:int:determinePhinxExecPath" hidden="true" logskipped="true">
+        <if>
+            <available file="${phinx.bin}" property="phinxExecutableExists" value="true" />
+            <then>
+                <echo>Phinx executable will be loaded from path: ${phinx.bin}</echo>
+            </then>
+            <else>
+                <fail>Phinx executable expected in path: ${phinx.bin}, but is not avalable!</fail>
+            </else>
+        </if>
+        <if>
+            <available file="${phinxConfig}" property="phinxConfigExists" value="true" />
+            <then>
+                <echo>Phinx config will be loaded from path: ${phinxConfig}</echo>
+            </then>
+            <else>
+                <fail>Phinx config expected in path: ${phinxConfig}, but is not avalable!</fail>
+            </else>
+        </if>
+    </target>
+
+</project>

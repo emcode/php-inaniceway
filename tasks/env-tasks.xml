@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Tasks for managing different application environments" default="env:list">
+
+    <property name="configPath" value="${project.basedir}/config" />
+
+    <target name="env:list" description="Lists configured environment" depends="env:int:listEnv"></target>
+    <target name="env:show" description="Shows info about configured environment" depends="env:int:showEnvConfig"></target>
+    <target name="env:create" description="Creates new environment" depends="env:int:createEnv,env:int:validateEnv"></target>
+
+    <target name="env:int:initEnv" description="Load settings in given environment from config files" hidden="true" logskipped="true">
+        <if>
+            <not>
+                <isset property="env"/>
+            </not>
+            <then>
+                <input propertyName="env" message="Please, enter environment name:"></input>
+            </then>
+        </if>
+        <property name="phingConfig" value="${project.basedir}/config/${env}-phing.properties"/>
+        <property name="phinxConfig" value="${project.basedir}/config/${env}-phinx.yml"/>
+        <phingcall target="env:int:validateEnv"></phingcall>
+        <property file="${phingConfig}" />
+    </target>
+
+    <target name="env:int:validateEnv" hidden="true" logskipped="true">
+        <if>
+            <available file="${phingConfig}" property="phingConfigExists" value="true" />
+            <then>
+                <echo>Phing config will be loaded from path: ${phingConfig}</echo>
+            </then>
+            <else>
+                <fail>Phing config expected in path: ${phingConfig}</fail>
+            </else>
+        </if>
+        <if>
+            <available file="${phinxConfig}" property="phinxConfigExists" value="true" />
+            <then>
+                <echo>Phinx config will be loaded from path: ${phinxConfig}</echo>
+            </then>
+            <else>
+                <fail>Phinx config expected in path: ${phinxConfig}</fail>
+            </else>
+        </if>
+    </target>
+
+    <target name="env:int:createEnv" description="Create config files for given environment" depends="env:int:determineEnvVariables"  hidden="true" logskipped="true">
+
+        <!-- Paths to template / example config files -->
+        <property name="templatePhingConfig" value="${configPath}/env-phing.properties.dist" />
+        <property name="templatePhinxConfig" value="${configPath}/env-phinx.yml.dist" />
+
+        <echo>Preparing Phing (automation tool) configuration file</echo>
+        <!-- Copy template Phing (automation tool) config file and fill it with environment variables -->
+        <property name="newPhingConfig" value="${configPath}/${newEnvName}-phing.properties" />
+        <copy file="${templatePhingConfig}" tofile="${newPhingConfig}" overwrite="false">
+            <filterchain>
+                <replaceregexp>
+                    <regexp pattern="db.name.+" replace="db.name = ${dbName}" ignoreCase="false"/>
+                    <regexp pattern="db.host.+" replace="db.host = ${dbHost}" ignoreCase="false"/>
+                    <regexp pattern="db.user.+" replace="db.user = ${dbUser}" ignoreCase="false"/>
+                    <regexp pattern="db.pass.+" replace="db.pass = ${dbPass}" ignoreCase="false"/>
+                </replaceregexp>
+            </filterchain>
+        </copy>
+
+        <echo>Preparing Phinx (migration tool) configuration file</echo>
+        <!-- Copy template Phinx (migration tool) config file and fill it with environment variables -->
+        <property name="newPhinxConfig" value="${configPath}/${newEnvName}-phinx.yml" />
+        <copy file="${templatePhinxConfig}" tofile="${newPhinxConfig}" overwrite="false">
+            <filterchain>
+                <replaceregexp>
+                    <regexp pattern="host: .+" replace="host: ${dbHost}" ignoreCase="false"/>
+                    <regexp pattern="name: .+" replace="name: ${dbName}" ignoreCase="false"/>
+                    <regexp pattern="user: .+" replace="user: ${dbUser}" ignoreCase="false" />
+                    <regexp pattern="pass:.+" replace="pass: '${dbPass}'" ignoreCase="false" />
+                </replaceregexp>
+            </filterchain>
+        </copy>
+
+        <echo>New environment "${newEnvName}" has been created!</echo>
+        <!-- Prepare some variables so we can validate them using "validateEnv" target -->
+        <property name="phingConfig" value="${configPath}/${newEnvName}-phing.properties"/>
+        <property name="phinxConfig" value="${configPath}/${newEnvName}-phinx.yml"/>
+    </target>
+
+    <target name="env:int:listEnv" description="List local environments" hidden="true" logskipped="true">
+        <!-- <property name="successfullyFoundEnvNames" value="0"/> -->
+        <foreach param="currentPhingConfigName" absparam="absCurrentPhingConfigPath" target="env:int:selectEnvNameFromFilename">
+            <fileset dir="${configPath}">
+                <type type="file" />
+                <include name="*-phing.properties"/>
+            </fileset>
+        </foreach>
+        <!-- <echo>Number of found environments: ${successfullyFoundEnvNames}</echo> -->
+    </target>
+
+    <target name="env:int:selectEnvNameFromFilename"  description="Determine environment name from config file name"  hidden="true" logskipped="true">
+        <!-- Find environment name based on phing config filename, for ex: "abcd" from "abcd-phing.properties" -->
+        <propertyregex property="currentEnvName"
+            subject="${currentPhingConfigName}"
+            pattern="([a-zA-Z0-9\.]+)\-phing\.properties"
+            match="$1"
+            casesensitive="false"
+            defaultvalue="env.name.not.found"
+        />
+        <if>
+            <equals arg1="${currentEnvName}" arg2="env.name.not.found" />
+            <then>
+                <echo>Could not determine environment name based on phing config name: ${currentPhingConfigName}</echo>
+            </then>
+            <else>
+                <echo>Environment: ${currentEnvName}</echo>
+            </else>
+        </if>
+    </target>
+
+    <target name="env:int:showEnvConfig" depends="env:int:initEnv" hidden="true" logskipped="true">
+        <loadfile property="phingConfigContent" file="${phingConfig}"/>
+        <echo message="-------------------------------------------------------------------------"></echo>
+        <echo message="Current Phing config in environment: ${env} (file: ${phingConfig})"></echo>
+        <echo message="-------------------------------------------------------------------------"></echo>
+        <echo message="${phingConfigContent}"></echo>
+
+        <loadfile property="phinxConfigContent" file="${phinxConfig}"/>
+        <echo message="-------------------------------------------------------------------------"></echo>
+        <echo message="Current Phinx config in environment: ${env} (file: ${phinxConfig})"></echo>
+        <echo message="-------------------------------------"></echo>
+        <echo message="${phinxConfigContent}"></echo>
+    </target>
+
+    <target name="env:int:determineEnvVariables" description="Determine new environment settings" hidden="true" logskipped="true">
+        <if>
+            <not>
+                <isset property="newEnvName"/>
+            </not>
+            <then>
+                <input propertyName="newEnvName" message="Please, enter name of new environment that you want to create:"></input>
+            </then>
+        </if>
+        <if>
+            <not>
+                <isset property="dbHost"/>
+            </not>
+            <then>
+                <input propertyName="dbHost" defaultValue="localhost" message="Enter db host:"></input>
+            </then>
+            <else>
+                <echo message="Using db host: ${dbHost}" />
+            </else>
+        </if>
+        <if>
+            <not>
+                <isset property="dbUser"/>
+            </not>
+            <then>
+                <input propertyName="dbUser" defaultValue="root" message="Enter db user:"></input>
+            </then>
+            <else>
+                <echo message="Using db user: ${dbUser}" />
+            </else>
+        </if>
+        <if>
+            <not>
+                <isset property="dbName"/>
+            </not>
+            <then>
+                <input propertyName="dbName" defaultValue="platform" message="Enter db name:"></input>
+            </then>
+            <else>
+                <echo message="Using db name: ${dbName}" />
+            </else>
+        </if>
+        <if>
+            <not>
+                <isset property="dbPass"/>
+            </not>
+            <then>
+                <input propertyName="dbPass" defaultValue="" message="Enter db password:"></input>
+            </then>
+            <else>
+                <echo message="Using db pass: ${dbPass}" />
+            </else>
+        </if>
+    </target>
+</project>

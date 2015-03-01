@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="NiceApp" default="" description="">
+<project name="NiceApp" default="env:list" description="">
+
+    <import file="${project.basedir}/tasks/env-tasks.xml" />
+    <import file="${project.basedir}/tasks/db-tasks.xml" />
 
 </project>
