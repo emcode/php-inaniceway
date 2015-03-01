@@ -9,13 +9,13 @@ This sample project will contain some boilerplate phing tasks and scripts that w
 
 # currently available tasks
 If you execute `phing -l` command, you will see following list of available tasks:
-- `db:create`   Creates configured database
-- `db:drop`     Destroys configured database (be careful with this)
-- `db:migrate`  Executes phinx migrations on DB
+- `db:create`   Creates database
+- `db:drop`     Destroys database (be careful with this)
+- `db:migrate`  Executes migrations on DB
 - `db:rebuild`  Drops, creates and migrates configured database
 - `env:create`  Creates new environment
-- `env:list`    Lists configured environment
-- `env:show`    Shows info about configured environment`
+- `env:list`    Lists configured environments
+- `env:show`    Shows details of environment
 
 
 # used tools
