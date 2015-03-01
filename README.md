@@ -7,6 +7,17 @@ If you will try to develop some complex project in a predictable fashion you wil
 # what it contains
 This sample project will contain some boilerplate phing tasks and scripts that will let you focus on programming instead of glueing together different scripts. Phing is a tool for automating tasks that programmer would have to otherwise do manually. Phinx is a tool for managing schema of your DB. I dont want this project to be specific for any framework - it should be as barebone as possible.
 
+# currently available tasks
+If you execute `phing -l` command, you will see following list of available tasks:
+- `db:create`   Creates configured database
+- `db:drop`     Destroys configured database (be careful with this)
+- `db:migrate`  Executes phinx migrations on DB
+- `db:rebuild`  Drops, creates and migrates configured database
+- `env:create`  Creates new environment
+- `env:list`    Lists configured environment
+- `env:show`    Shows info about configured environment`
+
+
 # used tools
 1. Phing (automation tool) 
 2. Phinx (db schema migration tool)
